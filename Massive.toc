@@ -1,0 +1,12 @@
+## Interface: 40000
+## Title: |c0000AAFFMassive DevTool|r
+## Version: r8
+## Author: Atriace
+## Notes: A suite of diagnostic and debugging tools aiding in quickly finding & tracking unknown data.
+## X-Website: www.Atriace.com
+## SavedVariables: MassiveData
+
+embed\LibStub.lua
+embed\LibGraph\LibGraph.lua
+Core.lua
+Kit.lua

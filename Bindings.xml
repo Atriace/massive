@@ -1,0 +1,33 @@
+<Bindings>
+	<Binding name="MASSIVE_RELOADUI" description="Reload the UI" header="MASSIVE">
+		ReloadUI()
+	</Binding>
+	<Binding name="MASSIVE_MOVE_LEFT" description="Move Shown window left" runOnUp="true">
+		if ( keystate == "down" ) then
+			Massive_moveShown("left", true)
+		else
+			Massive_moveShown("left", false)
+		end
+	</Binding>
+	<Binding name="MASSIVE_MOVE_RIGHT" description="Move Shown window right" runOnUp="true">
+		if ( keystate == "down" ) then
+			Massive_moveShown("right", true)
+		else
+			Massive_moveShown("right", false)
+		end
+	</Binding>
+	<Binding name="MASSIVE_MOVE_UP" description="Move Shown window up" runOnUp="true">
+		if ( keystate == "down" ) then
+			Massive_moveShown("up", true)
+		else
+			Massive_moveShown("up", false)
+		end
+	</Binding>
+	<Binding name="MASSIVE_MOVE_DOWN" description="Move Shown window down" runOnUp="true">
+		if ( keystate == "down" ) then
+			Massive_moveShown("down", true)
+		else
+			Massive_moveShown("down", false)
+		end
+	</Binding>
+</Bindings>
