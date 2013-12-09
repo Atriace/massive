@@ -309,6 +309,7 @@ function db.OnEscapePressed(self)
 end
 
 function db.OnEnterPressed(self)
+	-- Handles commands entered into the debug window.
 	local text, hit, arg, key, iend = self:GetText(), false
 	local call, arg = strsplit(" ", text)
 	if arg then
@@ -318,19 +319,21 @@ function db.OnEnterPressed(self)
 		call = text
 		arg = arg or ""
 	end
-	call = string.lower(call)
-	for k,v in pairs(SlashCmdList) do
-		key = string.lower(k)
-		if key==call then
-			v(arg)
-			hit = true
-			break
-		end
-	end
-	if hit==false then
-		db.print("/script "..text)
-		RunScript(text)
-	end
+
+	db[call](arg)
+	-- call = string.lower(call)
+	-- for k,v in pairs(SlashCmdList) do
+	-- 	key = string.lower(k)
+	-- 	if key==call then
+	-- 		v(arg)
+	-- 		hit = true
+	-- 		break
+	-- 	end
+	-- end
+	-- if hit==false then
+	-- 	db.print("/script "..text)
+	-- 	RunScript(text)
+	-- end
 end
 
 function db.SnapWindows(primary)
@@ -594,7 +597,8 @@ function db.ReportObject(target, depthLimit, indent)
 	if not db.ReportObject_TimeStamp then
 		db.ReportObject_TimeStamp = GetTime()
 		db.ReportObject_nestDepth = 1
-		db.print(indent.."<< Report for "..target.." started >>\r\r", 9, true)
+
+		db.print(indent.."<< Report for "..type(target).." started >>\r\r", 9, true)
 	end
 	
 	if object then
@@ -838,9 +842,64 @@ function db.OnUpdate(self, elapsed)
 	end
 end
 
+function db.listLayers()
+	local frameStruct = {
+		BACKGROUND = {"a", "b", "c"},
+		LOW = {},
+		MEDIUM = {},
+		HIGH = {},
+		DIALOG = {},
+		FULLSCREEN = {},
+		FULLSCREEN_DIALOG = {},
+		TOOLTIP = {},	
+		PARENT = {},
+		WORLD = {}
+	}
+
+	local count = 0
+	local frame = EnumerateFrames()
+	while frame do
+		count = count + 1
+		table.insert(frameStruct[frame:GetFrameStrata()], (frame:GetFrameLevel() or "nil")..":"..(frame:GetName() or frame:GetID()))
+		frame = EnumerateFrames(frame)
+	end
+	db.print("Completed "..count.." entries for ".. db.length(frameStruct))
+
+	count = 0
+	for i, t in pairs(frameStruct) do
+		count = count + 1
+		db.print(tostring(i).. " ¬")
+		for k,v in pairs(t) do 
+			db.print("    "..v)
+		end
+	end
+
+	db.print("Completed "..count.." queries.")
+end
+
+function db.getParent()
+	db.print(EnumerateFrames():GetParent():GetName())
+end
+
+function db.listRegions()
+	local regions = {_G:GetChildren()}
+	for k, v in pairs(regions) do 
+		db.print((v:GetName() or v:GetID()))
+	end
+end
+
+
+function db.length(T)
+  local count = 0
+  for _ in pairs(T) do count = count + 1 end
+  return count
+end
+
 db.VarInitialize()
 db.CreateWindow("MassiveReport", 512, 256, true,"BOTTOM")
 db.CreateEditBox("MassiveReport")
 db.CreateWindow("MassiveTracker", 100, 50, false, "TOP", MassiveReport)
 frame:SetScript("OnUpdate", db.OnUpdate)
 frame:SetScript("OnEvent", db.OnEvent)
+
+-- db.ReportObject(_G, 1)
