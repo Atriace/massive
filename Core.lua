@@ -2,9 +2,11 @@
 --| Authors: Atriace
 --| Website: massive.atriace.com																
 ----------------------------------------------------------------------------------
+local parent, db = ...
+
 DEFAULT_CHAT_FRAME:AddMessage("Massive Loaded", 1, 0, 0)
-local db, dbVersion = LibStub:NewLibrary("Massive",1);
-if not db then return end
+
+
 db.printLog = {"1","2","3","4","5","6","7","8","9","10"}
 db.error = {"frog", "lips", "dame", "man"}
 db.search = "exact"
@@ -215,6 +217,7 @@ function db.CreateWindow(title, sizeX, sizeY, fade, direction, parent)
 	frame:SetScript("OnMouseUp", function(self) db.SnapWindows(self) end)
 	frame:SetScript("OnHide", frame:GetScript("OnMouseUp"))
 	frame:SetFont(db.dir..db.font..".ttf", 10)
+	frame:SetSpacing(3)
 	
 	db.CreateBorder(title, frame)
 	db.CreateGrip(title, frame)
@@ -360,7 +363,7 @@ function db.print(msg, id, clear)
 		if msg and msg~=_ then
 			table.insert(db.printLog, 10, msg)
 			table.remove(db.printLog, 1)
-			MassiveReport:AddMessage(msg, .65, .65, .65, (id or 0))
+			MassiveReport:AddMessage(msg, .5, .5, .5, (id or 0))
 			MassiveReport:UpdateColorByID(1, 0.35, 0.35, 1.00) -- Blue
 			MassiveReport:UpdateColorByID(2, 0.50, 1.00, 0.50) -- Green
 			MassiveReport:UpdateColorByID(3, 1.00, 0.35, 0.35) -- Red
@@ -942,27 +945,34 @@ function db.listRegions()
 	end
 end
 
-function db.listing()
-	-- local children = Minimap:GetChildren()
-	-- for k, v in pairs(children) do 
-	-- 	db.print(k .. ":" .. tostring(v) .. " (" .. type(v) .. ")")
-	-- end
+--local startTime = time()
+function db.listing(item, prefix)
+	-- Initialize our arguments
 
-	local kids = { UIParent:GetChildren() };
-	for k, v in ipairs(kids) do
-		db.print(k .. ":" .. (v:GetName() or tostring(v)) .. ":" .. type(v))
+	if type(item) == "string" then
+		target = UIParent
+	else
+		target = item
 	end
-	-- local i = 1
-	-- while i < length do
-	-- 	local child = children[i]
-	-- 	db.print(child:GetName())
-	-- 	i = i + 1
-	-- end
 
-	-- local region = string.find(tostring(father.GetName or ""), "function", 1, true)
-	-- if region and type(father)=="table" then
-	-- 	if father.GetChildren then object = { father:GetChildren() } end
-	-- end
+	if type(prefix) == "nil" then prefix = "" end
+
+	if target.GetChildren then
+		local children = { target:GetChildren() }
+		local childReturn = db.color(" ¬", "white")
+
+		for k, v in ipairs(children) do
+			if v:GetNumChildren() ~= 0 then
+				db.print(prefix .. k .. ":" .. db.color((v:GetName() or tostring(v)), "white") .. ":" .. v:GetObjectType() .. childReturn)
+				db.listing(v, prefix .. "  ")
+			else
+				db.print(prefix .. k .. ":" .. db.color((v:GetName() or tostring(v)), "white") .. ":" .. v:GetObjectType())
+			end
+		end
+	else
+		db.print(type(item) .. ":" .. string.len(item) .. " & " .. type(prefix) .. ":" .. string.len(prefix))
+	end
+	
 end
 
 
