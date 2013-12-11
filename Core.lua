@@ -47,8 +47,8 @@ function db.VarInitialize()
 	}
 	
 	db.cmdList = {
-		obj = "ReportObject",
-		object = "ReportObject",
+		obj = "report",
+		object = "report",
 		event = "FrameEvents",
 		track = "track",
 		ilist = "InvList",
@@ -579,7 +579,7 @@ function db.sanitize(arg)
 	return value
 end
 
-function db.ReportObject(target, depthLimit, indent)	
+function db.report(target, depthLimit, indent)	
 	depthLimit = (tonumber(depthLimit)) or 4
 	indent = indent or ""
 	local object, region, regions, vType, key  = target
@@ -619,7 +619,7 @@ function db.ReportObject(target, depthLimit, indent)
 					end
 					if db.ReportObject_nestDepth<=depthLimit and k~="parent" then
 						db.ReportObject_nestDepth = db.ReportObject_nestDepth + 1
-						db.ReportObject(object[k], depthLimit, indent.."  ")
+						db.report(object[k], depthLimit, indent.."  ")
 					end
 					if not v.GetObjectType then
 						db.print(indent.."},", 5)
@@ -860,7 +860,11 @@ function db.listLayers()
 	local frame = EnumerateFrames()
 	while frame do
 		count = count + 1
-		table.insert(frameStruct[frame:GetFrameStrata()], (frame:GetFrameLevel() or "nil")..":"..(frame:GetName() or frame:GetID()))
+		if (go) then
+			table.insert(dataTypes, frame:GetObjectType())
+			table.insert(frameStruct[frame:GetFrameStrata()], (frame:GetFrameLevel() or "nil")..": "..(frame:GetName() or frame:GetID()) .. ":" .. frame:GetObjectType())
+		end
+		
 		frame = EnumerateFrames(frame)
 	end
 	db.print("Completed "..count.." entries for ".. db.length(frameStruct))
@@ -878,21 +882,94 @@ function db.listLayers()
 end
 
 function db.getParent()
-	db.print(EnumerateFrames():GetParent():GetName())
+	db.print(EnumerateFrames():GetParent())
 end
 
 function db.listRegions()
-	local regions = {_G:GetChildren()}
-	for k, v in pairs(regions) do 
-		db.print((v:GetName() or v:GetID()))
+	local frameTypes = {
+		Frame = true,
+		Button = true,
+		GameTooltip = true,
+		StatusBar = true,
+		DressUpModel = true,
+		MessageFrame = true,
+		EditBox = true,
+		ScrollFrame = true,
+		Slider = true,
+		CheckButton = true,
+		Cooldown = true,
+		PlayerModel = true,
+		Minimap = true,
+		ScrollingMessageFrame = true,
+		SimpleHTML = true,
+		QuestPOIFrame = true,
+		ArcheologyDigSiteFrame = true,
+		ScenarioPOIFrame = true,
+		TabardModel = true,
+		Browser = true,
+		ColorSelect = true,
+		MovieFrame = true
+	}
+
+	local ignore = {
+		["function"] = true,
+		["string"] = true,
+		["number"] = true,
+		["boolean"] = true
+	}
+
+	--if not father then father = _G end
+
+	local uncategorized = {}
+
+	local i = 0
+	for k, v in pairs(_G) do
+		if ignore[type(v)] ~= true then
+			-- if uncategorized[type(v)] ~= true then
+			-- 	uncategorized[type(v)] = true
+			-- end
+			db.print(v:GetObjectType())
+			-- if frameTypes[v:GetObjectType()] then
+			-- 	db.print(i..(v:GetName() or v:GetID()))
+			-- 	i = i + 1
+			-- end
+		end
 	end
+
+	db.print("Found the following additions:")
+	for k, v in pairs(uncategorized) do
+		db.print(k)
+	end
+end
+
+function db.listing()
+	-- local children = Minimap:GetChildren()
+	-- for k, v in pairs(children) do 
+	-- 	db.print(k .. ":" .. tostring(v) .. " (" .. type(v) .. ")")
+	-- end
+
+	local kids = { UIParent:GetChildren() };
+	for k, v in ipairs(kids) do
+		db.print(k .. ":" .. (v:GetName() or tostring(v)) .. ":" .. type(v))
+	end
+	-- local i = 1
+	-- while i < length do
+	-- 	local child = children[i]
+	-- 	db.print(child:GetName())
+	-- 	i = i + 1
+	-- end
+
+	-- local region = string.find(tostring(father.GetName or ""), "function", 1, true)
+	-- if region and type(father)=="table" then
+	-- 	if father.GetChildren then object = { father:GetChildren() } end
+	-- end
 end
 
 
 function db.length(T)
-  local count = 0
-  for _ in pairs(T) do count = count + 1 end
-  return count
+	local count = 0
+	for _ in pairs(T) do count = count + 1 end
+	return count
 end
 
 db.VarInitialize()
