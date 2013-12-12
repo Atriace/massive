@@ -8,5 +8,6 @@
 
 embed\LibStub.lua
 embed\LibGraph\LibGraph.lua
-Core.lua
 Kit.lua
+UI.lua
+Core.lua

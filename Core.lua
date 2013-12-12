@@ -7,12 +7,45 @@ local parent, db = ...
 DEFAULT_CHAT_FRAME:AddMessage("Massive Loaded", 1, 0, 0)
 
 
+-- No idea...
 db.printLog = {"1","2","3","4","5","6","7","8","9","10"}
 db.error = {"frog", "lips", "dame", "man"}
-db.search = "exact"
 while not db.error[20] do
 	table.insert(db.error, 1, "Oodles")
 end
+
+-- Settings
+db.search = "exact"
+db.trackedVars = {}
+db.events = {}
+db.RegisteredEvents = {
+	MACRO_ACTION_FORBIDDEN = "ActionBlocked",
+	ADDON_ACTION_FORBIDDEN = "ActionBlocked",
+	PLAYER_LOGOUT = "PlayerLogout",
+	VARIABLES_LOADED = "VariablesLoaded",
+}
+db.dir = "Interface\\AddOns\\Massive\\media\\"
+db.font = "VeraMoBd"
+db.ScrollInterval = 0
+db.UpdateInterval = 0
+db.SecondInterval = 0
+db.second = 0
+db.physics = {
+	as = 0,
+	v = 0,
+	dx = 0,
+}
+
+db.cmdList = {
+	["report"] = "report",
+	["event"] = "FrameEvents",
+	["track"] = "track",
+	["ilist"] = "InvList",
+	["cvar"] = "cvar",
+	["find"] = "FindObject",
+	["show"] = "show"
+}
+
 local frame = CreateFrame("Frame", "Massive", UIParent)
 frame:SetPoint("CENTER")
 frame:SetHeight(1)
@@ -24,49 +57,16 @@ function db.VarInitialize()
 	SlashCmdList["MASSIVE"] = db.SlashCmd
 	SLASH_MASSIVE1 = "/mass"
 	SLASH_MASSIVE2 = "/massive"
-	masspath = LibStub.libs.Massive
-	db.trackedVars = {}
-	db.events = {}
-	db.RegisteredEvents = {
-		MACRO_ACTION_FORBIDDEN = "ActionBlocked",
-		ADDON_ACTION_FORBIDDEN = "ActionBlocked",
-		PLAYER_LOGOUT = "PlayerLogout",
-		VARIABLES_LOADED = "VariablesLoaded",
-	}
 	for k,v in pairs(db.RegisteredEvents) do frame:RegisterEvent(k) end
-	
-	db.dir = "Interface\\AddOns\\Massive\\media\\"
-	db.pre = "Massive"
-	db.font = "VeraMoBd"
-	db.ScrollInterval = 0
-	db.UpdateInterval = 0
-	db.SecondInterval = 0
-	db.second = 0
-	db.physics = {
-		as = 0,
-		v = 0,
-		dx = 0,
-	}
-	
-	db.cmdList = {
-		obj = "report",
-		object = "report",
-		event = "FrameEvents",
-		track = "track",
-		ilist = "InvList",
-		cvar = "cvar",
-		find = "FindObject",
-		show = "show",
-	}
 	
 	--[[ KeyBindings ]]--
 	BINDING_HEADER_MASSIVE = "Massive Development Tool"
 	BINDING_NAME_MASSIVE_RELOADUI = "Reload the UI"
-	BINDING_NAME_MASSIVE_MOVE_LEFT = "Move Shown window left"
-	BINDING_NAME_MASSIVE_MOVE_RIGHT = "Move Shown window right"
 	BINDING_NAME_MASSIVE_MOVE_UP = "Move Shown window up"
 	BINDING_NAME_MASSIVE_MOVE_DOWN = "Move Shown window down"
-		
+	BINDING_NAME_MASSIVE_MOVE_LEFT = "Move Shown window left"
+	BINDING_NAME_MASSIVE_MOVE_RIGHT = "Move Shown window right"
+
 	MassiveData = db
 end
 
@@ -99,12 +99,12 @@ function db.show(region)
 	local object, swap, path = _G[region], region
 	if object then
 		db.shownregion = object
-		local frame = MassiveRegion or CreateFrame("Frame", db.pre.."Region", Massive)
+		local frame = MassiveRegion or CreateFrame("Frame", "MassiveRegion", Massive)
 		frame:ClearAllPoints()
 		frame:SetAllPoints(object)
 		frame:SetFrameStrata("DIALOG")
 		
-		local texture = MassiveRegion_Texture or frame:CreateTexture(db.pre.."Region_Texture","BACKGROUND")
+		local texture = MassiveRegion_Texture or frame:CreateTexture("MassiveRegion_Texture","BACKGROUND")
 		texture:SetTexture(1,1,1,0.25)
 		texture:SetAllPoints(frame)
 		
@@ -115,14 +115,14 @@ function db.show(region)
 		fontstring:SetShadowColor(0, 0, 0, 1)
 		fontstring:SetShadowOffset(1, -1)
 		
-		local bg = MassiveRegion_BG or frame:CreateTexture(db.pre.."Region_BG","BACKGROUND")
+		local bg = MassiveRegion_BG or frame:CreateTexture("MassiveRegion_BG","BACKGROUND")
 		bg:SetTexture(0,0,0,0.75)
 		bg:SetPoint("BOTTOMLEFT", texture, "TOPLEFT", 0,1)
 		bg:SetPoint("BOTTOMRIGHT", texture, "TOPRIGHT", 0,1)
 		bg:SetPoint("TOPLEFT", texture, "TOPLEFT", 0,70)
 		bg:SetPoint("TOPRIGHT", texture, "TOPRIGHT", 0,70)
 		
-		local seperator = MassiveRegion_Seperator or frame:CreateTexture(db.pre.."Region_Seperator","HIGH")
+		local seperator = MassiveRegion_Seperator or frame:CreateTexture("MassiveRegion_Seperator","HIGH")
 		seperator:SetTexture(1,1,1,0.5)
 		seperator:SetPoint("BOTTOMLEFT", texture, "TOPLEFT", 0,0)
 		seperator:SetPoint("BOTTOMRIGHT", texture, "TOPRIGHT", 0,0)
@@ -185,128 +185,6 @@ function db.cvar(var, setting)
 	end
 end
 
-function db.CreateWindow(title, sizeX, sizeY, fade, direction, parent)	
-	-- Primary output window
-	local frame = CreateFrame("ScrollingMessageFrame", title, _G[db.pre])
-	frame:StopMovingOrSizing()
-	frame:ClearAllPoints()
-	if parent then
-		frame:SetPoint("TOPLEFT", parent, "TOPRIGHT", 13, 0)
-	end
-	frame:SetFrameStrata("HIGH")
-	frame:SetWidth(256)
-	frame:SetHeight(256)
-	frame:SetPoint("CENTER",0,0)
-	-- frame:SetInsertMode(direction)
-	frame:SetJustifyH("LEFT")
-	frame:SetMaxLines(50000)
-	frame:SetFading(false)
-	frame:SetFadeDuration(3)
-	frame:SetTimeVisible(60)
-	frame:SetResizable(true)
-	frame:SetMinResize(50, 50) 
-	frame:SetClampedToScreen(true)
-	frame:SetClampRectInsets(-9, 7, 7, -7)
-	frame:SetMovable(true)
-	frame:EnableMouse(true)
-	frame:EnableMouseWheel(true)
-	frame:SetScript("OnMouseWheel", db.ScrollReport)
-	frame:RegisterForDrag("LeftButton")
-	frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
-	frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
-	frame:SetScript("OnMouseUp", function(self) db.SnapWindows(self) end)
-	frame:SetScript("OnHide", frame:GetScript("OnMouseUp"))
-	frame:SetFont(db.dir..db.font..".ttf", 10)
-	frame:SetSpacing(3)
-	
-	db.CreateBorder(title, frame)
-	db.CreateGrip(title, frame)
-	db.CreateTitle(title, frame)
-	
-	frame:AddMessage("<< "..title.." Online >>", .5, .5, .5, 0)
-end
-
-function db.CreateBorder(title, frame)
-	local bg = frame:CreateTexture(title.."_BG","BACKGROUND")
-	local xOf, yOf, loc, border, i = 5, 5, {
-		[1] = { "BOTTOMRIGHT", "TOPLEFT" }, -- tl
-		[2] = { "BOTTOMLEFT", "TOPRIGHT" }, -- tr
-		[3] = { "TOPRIGHT", "BOTTOMLEFT" }, -- bl
-		[4] = { "TOPLEFT", "BOTTOMRIGHT" }, -- br
-		[5] = { "BOTTOM", "TOP", "LEFT", "RIGHT", 1, 2 }, -- top
-		[6] = { "RIGHT", "LEFT", "TOP", "BOTTOM", 1, 3 }, -- left
-		[7] = { "LEFT", "RIGHT", "TOP", "BOTTOM", 2, 4 }, -- right
-		[8] = { "TOP", "BOTTOM", "LEFT", "RIGHT", 3, 4 }, -- bottom
-	}
-	bg:SetTexture(0,0,0,0.75)
-	bg:SetPoint("TOPLEFT", frame, "TOPLEFT", -(xOf+2), yOf)
-	bg:SetPoint("TOPRIGHT", frame, "TOPRIGHT", xOf, yOf)
-	bg:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", -(xOf+2), -yOf)
-	bg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", xOf, -yOf)
-	for v=1, 8, 1 do
-		border = frame:CreateTexture(title.."_Border_"..v, "BORDER")
-		border:SetTexture(1,1,1,.1)
-		border:SetHeight(1)
-		border:SetWidth(1)
-		border:SetPoint(loc[v][1], bg, loc[v][2])
-		if v>4 then
-			border:SetPoint(loc[v][3], title.."_Border_"..loc[v][5], loc[v][4])
-			border:SetPoint(loc[v][4], title.."_Border_"..loc[v][6], loc[v][3])
-		end
-	end
-end
-
-function db.CreateGrip(title, frame)
-	local handle = CreateFrame("Button", title.."Handle", frame)
-	handle:SetWidth(16)
-	handle:SetHeight(16)
-	handle:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
-	handle:EnableMouse(true)
-	handle:RegisterForClicks("LeftButton")
-	handle:SetScript("OnMouseDown", function() _G[title]:StartSizing() end)
-	handle:SetScript("OnMouseUp", function() _G[title]:StopMovingOrSizing() end)
-	local texture = handle:CreateTexture("HandleTexture","HIGH")
-	texture:SetTexture(db.dir.."grip")
-	texture:SetAllPoints(handle)
-end
-
-function db.CreateTitle(title, frame)
-	local bg = _G[frame:GetName().."_BG"]
-	local bar = CreateFrame("Frame", title.."Bar", frame)
-	bar:ClearAllPoints()
-	bar:SetHeight(32)
-	bar:SetPoint("TOPLEFT", bg, "TOPLEFT", 0, 0)
-	bar:SetPoint("TOPRIGHT", bg, "TOPRIGHT", 0, 0)
-	bar:SetFrameStrata("DIALOG")
-	
-	local texture = bar:CreateTexture(title.."Bar_Texture","BACKGROUND")
-	texture:SetTexture(.1,.1,.1,.9)
-	texture:SetAllPoints(bar)
-	
-	local fontstring = bar:CreateFontString(title.."Title","DIALOG") 
-	fontstring:SetFont(db.dir..db.font..".ttf", 13)
-	fontstring:SetJustifyH("LEFT")
-	fontstring:SetPoint("left", bar, "left", 15, -1)
-	fontstring:SetShadowColor(0, 0, 0, 1)
-	fontstring:SetShadowOffset(0, -1)
-	fontstring:SetText(title)
-end
-
-function db.CreateEditBox(parent)
-	local title = parent.."Edit"
-	local frame = CreateFrame("EditBox", title, _G[parent])
-	frame:SetFont(db.dir..db.font..".ttf", 11)
-	frame:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 0, -11)
-	frame:SetPoint("TOPRIGHT", parent, "BOTTOMRIGHT", 0, -11)
-	frame:SetFrameStrata("HIGH")
-	frame:SetHeight(26)
-	frame:ClearFocus()
-	frame:SetAutoFocus(false)
-	frame:SetScript("OnEscapePressed", db.OnEscapePressed)
-	frame:SetScript("OnEnterPressed", db.OnEnterPressed)
-	db.CreateBorder(title, frame)
-end
-
 function db.OnEscapePressed(self)
 	self:ClearFocus()
 end
@@ -341,7 +219,7 @@ end
 
 function db.SnapWindows(primary)
 	local ploc = {db.GetPoints(primary, "all")}
-	local frames = { _G[db.pre]:GetChildren() }
+	local frames = { _G["Massive"]:GetChildren() }
 	for _,v in ipairs(frames) do
 		if v~=primary then
 			local loc, tolerance = {db.GetPoints(v, "all")}, 30
@@ -694,24 +572,6 @@ function db.InvList()
 	end
 end
 
-function db.TableSort(a, b)
-	if a<b then
-		return true
-	end 
-end
-
-function db.GetObject(stringPath)
-	local path, obj = { strsplit(".", stringPath) }
-	for k,v in pairs(path) do
-		if not obj then
-			obj = _G[v]
-		else
-			obj = obj[v]
-		end
-	end
-	return obj
-end
-
 function db.ScrollReport(self, state)
 	db.physics.as = state
 end
@@ -750,7 +610,6 @@ function db.VariablesLoaded()
 				db.events.k = true
 			end
 		end
-		
 	end
 end
 
