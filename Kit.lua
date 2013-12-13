@@ -4,8 +4,10 @@
 ----------------------------------------------------------------------------------
 local parent, db = ...
 
+DEFAULT_CHAT_FRAME:AddMessage("Massive: Kit Loaded", 1, 0, 0)
+
 function db.TableSort(a, b)
-	if a<b then
+	if a < b then
 		return true
 	end 
 end

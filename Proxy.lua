@@ -4,7 +4,7 @@
 
 local parent, db = ...
 
-
+DEFAULT_CHAT_FRAME:AddMessage("Massive: Proxy Loaded", 1, 0, 0)
 
 function Proxy(input:Object)
 	local props = {

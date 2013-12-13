@@ -4,6 +4,8 @@
 ----------------------------------------------------------------------------------
 local parent, db = ...
 
+DEFAULT_CHAT_FRAME:AddMessage("Massive: UI Loaded", 1, 0, 0)
+
 function db.CreateWindow(title, sizeX, sizeY, fade, direction, parent)
 	-- Deprecated.  To be replaced by db.shape()
 	-- Primary output window
@@ -148,12 +150,12 @@ function align(a, b, p)
 		aProxe.y = loc.y + aProxe.bound.y
 
 		-- If declared, use the XY specific values, otherwise, the generic value.
-		padX = (padX ~= nil) ? padX : pad
-		padY = (padY ~= nil) ? padY : pad
-		overlapX = (overlapX ~= nil) ? overlapX : overlap
-		overlapY = (overlapY ~= nil) ? overlapY : overlap
-		scaleX = (scaleX ~= nil) ? scaleX : scale
-		scaleY = (scaleY ~= nil) ? scaleY : scale
+		-- padX = (padX ~= nil) ? padX : pad
+		-- padY = (padY ~= nil) ? padY : pad
+		-- overlapX = (overlapX ~= nil) ? overlapX : overlap
+		-- overlapY = (overlapY ~= nil) ? overlapY : overlap
+		-- scaleX = (scaleX ~= nil) ? scaleX : scale
+		-- scaleY = (scaleY ~= nil) ? scaleY : scale
 
 		-- Apply final scale values.
 		aProxe.scaleX = scaleX
@@ -164,39 +166,39 @@ function align(a, b, p)
 		-- Place the XY of This at the coordinates defined by the percentages of (H)orizontal and (V)ertical values relative to That plus padding.
 		local offset = {}
 
-		local h2:Number = 1 - h
-		if (overlapX) {
+		local h2 = 1 - h
+		if (overlapX) then
 			h2 = h
 			padX = -padX
-		}
+		end
 		offset.x = (bProxe.width + padX * 2) * h - padX - aProxe.width * h2 + bProxe.x
 
 		local v2 = 1 - v
-		if (overlapY) {
+		if (overlapY) then
 			v2 = v
 			padY = -padY
-		}
+		end
 		offset.y = (bProxe.height + padY * 2) * v -padY - aProxe.height * v2 + bProxe.y
 		
 		-- Convert the values back to local space (removing offsets).
 		offset = toLocal(offset, aProxe.parent).locs()
 
 		-- Undo the boundary compensation
-		offset.x -= aProxe.bound.x
-		offset.y -= aProxe.bound.y
+		offset.x = offset.x - aProxe.bound.x
+		offset.y = offset.y - aProxe.bound.y
 
-		if (clamp) {
+		if (clamp) then
 			offset.y = Math.round(offset.y)
 			offset.x = Math.round(offset.x)
-		}
+		end
 
-		if (apply) {
+		if (apply) then
 			a.x = offset.x
 			a.y = offset.y
-		} else {
+		else
 			delete(offset.parent)
 			db.merge(offset, aProxe)
-		}
+		end
 
 		-- Undo the scale
 		aProxe.width = a.width
@@ -204,7 +206,7 @@ function align(a, b, p)
 
 		return aProxe
 	else
-		local aName:String, bName:String
+		local aName, bName
 		if (a ~= nil and a.name) then
 			aName = a.name
 		else
@@ -220,7 +222,7 @@ function align(a, b, p)
 		db.print("Cannot align a nil object. " .. aName .. " to " .. bName, "error")
 		db.report(a)
 		db.report(b)
-		return new Proxe()
+		--return Proxe()
 	end
 end
 

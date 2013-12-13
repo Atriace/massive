@@ -4,7 +4,7 @@
 ----------------------------------------------------------------------------------
 local parent, db = ...
 
-DEFAULT_CHAT_FRAME:AddMessage("Massive Loaded", 1, 0, 0)
+DEFAULT_CHAT_FRAME:AddMessage("Massive: Core Loaded", 1, 0, 0)
 
 
 -- No idea...
