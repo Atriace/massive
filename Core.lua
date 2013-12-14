@@ -42,7 +42,7 @@ db.cmdList = {
 	["track"] = "track",
 	["ilist"] = "InvList",
 	["cvar"] = "cvar",
-	["find"] = "FindObject",
+	["find"] = "find",
 	["show"] = "show"
 }
 
@@ -62,6 +62,7 @@ function db.VarInitialize()
 	--[[ KeyBindings ]]--
 	BINDING_HEADER_MASSIVE = "Massive Development Tool"
 	BINDING_NAME_MASSIVE_RELOADUI = "Reload the UI"
+	BINDING_NAME_MASSIVE_TOGGLE = "Show/Hide the Debugger"
 	BINDING_NAME_MASSIVE_MOVE_UP = "Move Shown window up"
 	BINDING_NAME_MASSIVE_MOVE_DOWN = "Move Shown window down"
 	BINDING_NAME_MASSIVE_MOVE_LEFT = "Move Shown window left"
@@ -195,7 +196,11 @@ function db.OnEnterPressed(self)
 	local call = table.remove(args, 1)
 
 	db.print("Calling " .. call .. "(" .. (db.join(args, ", ") or "") .. ")", 4, true)
-	db[call](unpack(args))
+	if (db[call]) then
+		db[call](unpack(args))
+	else
+		db.print(call .. " is not a function", 3)
+	end
 end
 
 function db.SnapWindows(primary)
@@ -324,7 +329,7 @@ end
 
 local i, hits, valid, start, finish, swap
 
-function db.FindObject(object, scope, depthLimit, path, indent)
+function db.find(object, scope, depthLimit, path, indent)
 	if not object then
 		db.print("USAGE: find (object, scope, depthlimit)", 5)
 		return
@@ -371,7 +376,7 @@ function db.FindObject(object, scope, depthLimit, path, indent)
 		db.FindObject_TimeStamp = GetTime()
 		db.FindObject_nestDepth = 1
 		i, hits = 1, 0
-		db.print("\r\r<< Search for "..object.." started with a level "..depthLimit.." depth limit >>")
+		db.print("<< Search for "..object.." started with a level "..depthLimit.." depth limit >>", 4)
 		-- db.print("Object: "..object..".  Scope: "..valid.."("..type(scope)..").  Path:"..path..".  DepthLimit: "..depthLimit, 4)
 	end
 	local key, value, khit
@@ -421,7 +426,7 @@ function db.FindObject(object, scope, depthLimit, path, indent)
 					else
 						-- db.print(db.FindObject_nestDepth..": "..path..indent..tostring(k),5)
 						db.FindObject_nestDepth = db.FindObject_nestDepth + 1
-						db.FindObject(object, scope[k], depthLimit, path.."["..key.."]", (indent.."  "))
+						db.find(object, scope[k], depthLimit, path.."["..key.."]", (indent.."  "))
 					end
 				end
 			end
@@ -460,14 +465,14 @@ function db.report(target, depthLimit, indent)
 		db.ReportObject_TimeStamp = GetTime()
 		db.ReportObject_nestDepth = 1
 
-		db.print(indent.."<< Report for "..type(target).." started >>\r\r", 9)
+		db.print(indent.."<< Reporting " .. tostring(target) .. ":" .. type(target).." >>", 4)
 	end
 	
 	if object then
 		for k,v in pairs(object) do
 			if (GetTime()-db.ReportObject_TimeStamp) > 15 and not db.ReportObject_warned then
 				db.ReportObject_warned = true
-				db.print("\r\r"..indent.."--<< ReportObject failsafe activated >>--", 3)
+				db.print(indent.."--<< ReportObject failsafe activated >>--", 3)
 				db.print(indent.."-- Try limiting your search depth:", 9)
 				db.print(indent.."   /mass obj OBJECT |c000088FFdepthLimit|r\r\r", 10)
 				break
@@ -531,7 +536,7 @@ function db.report(target, depthLimit, indent)
 	db.ReportObject_nestDepth = db.ReportObject_nestDepth -1
 	if db.ReportObject_nestDepth==0 or db.ReportObject_nestDepth<0 then
 		db.ReportObject_TimeStamp, db.ReportObject_warned = nil, nil
-		db.print("\r\r"..indent.."<< Report Complete >>", 9, false)
+		--db.print("\r\r"..indent.."<< Report Complete >>", 9, false)
 	end
 end
 
@@ -687,7 +692,7 @@ end
 
 function db.listLayers()
 	local frameStruct = {
-		BACKGROUND = {"a", "b", "c"},
+		BACKGROUND = {},
 		LOW = {},
 		MEDIUM = {},
 		HIGH = {},
@@ -722,10 +727,6 @@ function db.listLayers()
 	end
 
 	db.print("Completed "..count.." queries.")
-end
-
-function db.getParent()
-	db.print(EnumerateFrames():GetParent())
 end
 
 function db.listRegions()
@@ -786,7 +787,7 @@ function db.listRegions()
 end
 
 --local startTime = time()
-function db.listing(item, depth, prefix)
+function db.list(item, depth, prefix)
 	-- Initialize our arguments
 
 	-- Initialize item
@@ -801,7 +802,7 @@ function db.listing(item, depth, prefix)
 
 	if type(prefix) == "nil" then prefix = "" end
 
-	if target.GetChildren then
+	if target ~= nil and target.GetChildren then
 		local children = { target:GetChildren() }
 		local childReturn = db.color(" ¬", "white")
 
@@ -810,50 +811,15 @@ function db.listing(item, depth, prefix)
 				db.print(prefix .. k .. ":" .. db.color((v:GetName() or tostring(v)), "white") .. ":" .. v:GetObjectType() .. childReturn)
 				-- Dig into the child element, only if we haven't reached our depth limit
 				if depth ~= 1 then
-					db.listing(v, depth - 1, prefix .. "  ")
+					db.list(v, depth - 1, prefix .. "  ")
 				end
 			else
 				db.print(prefix .. k .. ":" .. db.color((v:GetName() or tostring(v)), "white") .. ":" .. v:GetObjectType())
 			end
 		end
 	else
-		db.print(type(item) .. ":" .. string.len(item) .. " & " .. type(prefix) .. ":" .. string.len(prefix))
+		db.print("A valid object must be supplied to list.", 3)
 	end
-end
-
-function db.test()
-	local a = {
-		["apple"] = "pie",
-		["orange"] = "juice",
-		["pear"] = "emulator",
-		["games"] = {
-			["Mass Effect"] = true,
-			["Kings Bounty"] = true,
-			["Panzer Fight"] = false
-		},
-		["colors"] = {
-			"red",
-			"green",
-			"blue"
-		}
-	}
-
-	local b = {
-		["prune"] = "juice",
-		["apple"] = "fritter",
-		["colors"] = {
-			"orange",
-			"azure"
-		}
-	}
-
-	db.print("Before", 1)
-	db.report(b)
-
-	db.clone(a, b)
-
-	db.print("After", 5)
-	db.report(b)
 end
 
 db.VarInitialize()

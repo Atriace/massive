@@ -62,11 +62,20 @@ function db.clone(input, output)
 	-- Iterate over the input object
 	for k, v in pairs(input) do
 		if (type(v) == "table") then
-			output[k] = db.clone(input[v], {})
+			if (output[k] and type(output[k]) == "table") then
+				--db.print("Cloning table to existing " .. tostring(k))
+				output[k] = db.clone(v, output[k])
+			else
+				--db.print("Cloning to new table " .. tostring(k))
+				output[k] = db.clone(v, {})
+			end
 		else
+			--db.print("Cloning " .. tostring(k) .. " | " .. (tostring(output[k]) or "nil") .. " >> " .. (tostring(input[k]) or "nil"))
 			output[k] = input[k]
 		end
 	end
+
+	return output
 end
 
 function db.merge(input, output)
@@ -98,6 +107,8 @@ function db.merge(input, output)
 			end
 		end
 	end
+
+	return output
 end
 
 
@@ -144,4 +155,18 @@ function db.join(arr, sep)
 		end
 	end
 	return s
+end
+
+function charPad(num, char)
+	-- Returns a string of num length of char type
+	if (num < 1) then num = 0 end
+	if char == nil then char = " " end
+
+	local i = 0
+	local txt = ""
+	while (i <= num) do
+		txt = txt .. char
+		i = i + 1
+	end
+	return txt
 end
