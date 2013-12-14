@@ -6,22 +6,45 @@ local parent, db = ...
 
 DEFAULT_CHAT_FRAME:AddMessage("Massive: Kit Loaded", 1, 0, 0)
 
+function db.get(stringPath)
+	-- Resolves a dot.notation to the nested object it was refering to.
+	local path, obj = db.split(stringPath, ".")
+	local objName = ""
+	for k,v in pairs(path) do
+		if not obj then
+			if _G[v] then
+				objName = v
+				obj = _G[v]
+			else
+				db.print(v .. " is not a global property.", 3)
+			end
+		else
+			if obj[v] then
+				objName = v
+				obj = obj[v]
+			else
+				db.print(v .. " is not a property of " .. objName, 3)
+			end
+		end
+	end
+	return obj
+end
+
+
+-----------------------
+--| Table Functions |--
+-----------------------
+
 function db.TableSort(a, b)
 	if a < b then
 		return true
 	end 
 end
 
-function db.GetObject(stringPath)
-	local path, obj = { strsplit(".", stringPath) }
-	for k,v in pairs(path) do
-		if not obj then
-			obj = _G[v]
-		else
-			obj = obj[v]
-		end
-	end
-	return obj
+function db.length(T)
+	local count = 0
+	for _ in pairs(T) do count = count + 1 end
+	return count
 end
 
 function db.clone(input, output)
@@ -77,10 +100,10 @@ function db.merge(input, output)
 	end
 end
 
-function db.color(string, color)
-	-- Returns text in the color chosen
-	return ("|c00" .. db.hue[color] .. string .. "|r");
-end
+
+------------------------
+--| String Functions |--
+------------------------
 
 db.hue = {
 	["azure"] = "40acf6",
@@ -95,3 +118,30 @@ db.hue = {
 	["darkGrey"] = "333333",
 	["black"] = "000000"
 }
+
+
+function db.color(string, color)
+	-- Returns text in the color chosen
+	return ("|c00" .. db.hue[color] .. string .. "|r");
+end
+
+function db.split(s, sep)
+	--db.print("Running split on '" .. s .. "' using '" .. sep .. "'")
+	local sep, fields = sep or ":", {}
+	local pattern = string.format("([^%s]+)", sep)
+	string.gsub(s, pattern, function(c) fields[#fields+1] = c end)
+	return fields
+end
+
+function db.join(arr, sep)
+	--db.print("Joining " .. #arr .. " with '" .. sep .. "'")
+	local s = arr[1]
+	if #arr > 1 then
+		for k, v in pairs(arr) do
+			if k > 1 then
+				s = s .. sep .. v
+			end
+		end
+	end
+	return s
+end

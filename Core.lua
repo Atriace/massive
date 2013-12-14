@@ -191,30 +191,11 @@ end
 
 function db.OnEnterPressed(self)
 	-- Handles commands entered into the debug window.
-	local text, hit, arg, key, iend = self:GetText(), false
-	local call, arg = strsplit(" ", text)
-	if arg then
-		key, iend = string.find(text, call)
-		arg = string.sub(text, iend+2)
-	else
-		call = text
-		arg = arg or ""
-	end
+	local args = db.split(self:GetText(), " ")
+	local call = table.remove(args, 1)
 
-	db[call](arg)
-	-- call = string.lower(call)
-	-- for k,v in pairs(SlashCmdList) do
-	-- 	key = string.lower(k)
-	-- 	if key==call then
-	-- 		v(arg)
-	-- 		hit = true
-	-- 		break
-	-- 	end
-	-- end
-	-- if hit==false then
-	-- 	db.print("/script "..text)
-	-- 	RunScript(text)
-	-- end
+	db.print("Calling " .. call .. "(" .. (db.join(args, ", ") or "") .. ")", 4, true)
+	db[call](unpack(args))
 end
 
 function db.SnapWindows(primary)
@@ -259,7 +240,7 @@ function db.track(var)
 	if var=="erase" or var=="clear" then
 		db.trackedVars = {}
 	else
-		local temp = db.GetObject(var)
+		local temp = db.get(var)
 		if type(temp)=="table" then
 			for k, v in pairs(temp) do
 				local vType = type(v)
@@ -318,7 +299,7 @@ function db.GetPoints(frame, anchor)
 end
 
 function db.FrameEvents(frame, eventName)
-	local gFrame = db.GetObject(frame)
+	local gFrame = db.get(frame)
 	if gFrame and gFrame.IsEventRegistered then
 		if eventName then
 			eventName = string.upper(eventName)
@@ -467,7 +448,7 @@ function db.report(target, depthLimit, indent)
 	if type(target)=="string" then
 		object = _G[target]
 		if not object then
-			object = db.GetObject(target)
+			object = db.get(target)
 		end
 	end
 	local region = string.find(tostring(object.GetName or ""), "function", 1, true)
@@ -479,7 +460,7 @@ function db.report(target, depthLimit, indent)
 		db.ReportObject_TimeStamp = GetTime()
 		db.ReportObject_nestDepth = 1
 
-		db.print(indent.."<< Report for "..type(target).." started >>\r\r", 9, true)
+		db.print(indent.."<< Report for "..type(target).." started >>\r\r", 9)
 	end
 	
 	if object then
@@ -664,7 +645,7 @@ function db.OnUpdate(self, elapsed)
 		if db.trackedVars then
 			MassiveTracker:Clear()
 			for k,v in pairs(db.trackedVars) do
-				local obj = db.GetObject(v)
+				local obj = db.get(v)
 				if not obj and GetCVar(v) then
 					local absMax, absMin, Max, Min = GetCVarAbsoluteMax(v), GetCVarAbsoluteMin(v), GetCVarMax(v), GetCVarMin(v)
 					obj = GetCVar(v).."\r(default: "..(GetCVarDefault(v) or "none").." | absMax:"..(absMax or "none").." | Max:"..(Max or "none").." | absMin:"..(absMin or "none").." | Min:"..(Min or "none")..")"
@@ -749,28 +730,28 @@ end
 
 function db.listRegions()
 	local frameTypes = {
-		Frame = true,
-		Button = true,
-		GameTooltip = true,
-		StatusBar = true,
-		DressUpModel = true,
-		MessageFrame = true,
-		EditBox = true,
-		ScrollFrame = true,
-		Slider = true,
-		CheckButton = true,
-		Cooldown = true,
-		PlayerModel = true,
-		Minimap = true,
-		ScrollingMessageFrame = true,
-		SimpleHTML = true,
-		QuestPOIFrame = true,
-		ArcheologyDigSiteFrame = true,
-		ScenarioPOIFrame = true,
-		TabardModel = true,
-		Browser = true,
-		ColorSelect = true,
-		MovieFrame = true
+		["Frame"] = true,
+		["Button"] = true,
+		["GameTooltip"] = true,
+		["StatusBar"] = true,
+		["DressUpModel"] = true,
+		["MessageFrame"] = true,
+		["EditBox"] = true,
+		["ScrollFrame"] = true,
+		["Slider"] = true,
+		["CheckButton"] = true,
+		["Cooldown"] = true,
+		["PlayerModel"] = true,
+		["Minimap"] = true,
+		["ScrollingMessageFrame"] = true,
+		["SimpleHTML"] = true,
+		["QuestPOIFrame"] = true,
+		["ArcheologyDigSiteFrame"] = true,
+		["ScenarioPOIFrame"] = true,
+		["TabardModel"] = true,
+		["Browser"] = true,
+		["ColorSelect"] = true,
+		["MovieFrame"] = true
 	}
 
 	local ignore = {
@@ -805,14 +786,18 @@ function db.listRegions()
 end
 
 --local startTime = time()
-function db.listing(item, prefix)
+function db.listing(item, depth, prefix)
 	-- Initialize our arguments
 
-	if type(item) == "string" then
-		target = UIParent
-	else
-		target = item
-	end
+	-- Initialize item
+	if item == nil then target = UIParent
+	elseif type(item) == "string" then target = db.get(item)
+	else target = item end
+
+	-- Initialize depth
+	if type(depth) == "string" then depth = tonumber(depth) end
+	if depth == nil then depth = 10 end
+
 
 	if type(prefix) == "nil" then prefix = "" end
 
@@ -823,7 +808,10 @@ function db.listing(item, prefix)
 		for k, v in ipairs(children) do
 			if v:GetNumChildren() ~= 0 then
 				db.print(prefix .. k .. ":" .. db.color((v:GetName() or tostring(v)), "white") .. ":" .. v:GetObjectType() .. childReturn)
-				db.listing(v, prefix .. "  ")
+				-- Dig into the child element, only if we haven't reached our depth limit
+				if depth ~= 1 then
+					db.listing(v, depth - 1, prefix .. "  ")
+				end
 			else
 				db.print(prefix .. k .. ":" .. db.color((v:GetName() or tostring(v)), "white") .. ":" .. v:GetObjectType())
 			end
@@ -831,14 +819,41 @@ function db.listing(item, prefix)
 	else
 		db.print(type(item) .. ":" .. string.len(item) .. " & " .. type(prefix) .. ":" .. string.len(prefix))
 	end
-	
 end
 
+function db.test()
+	local a = {
+		["apple"] = "pie",
+		["orange"] = "juice",
+		["pear"] = "emulator",
+		["games"] = {
+			["Mass Effect"] = true,
+			["Kings Bounty"] = true,
+			["Panzer Fight"] = false
+		},
+		["colors"] = {
+			"red",
+			"green",
+			"blue"
+		}
+	}
 
-function db.length(T)
-	local count = 0
-	for _ in pairs(T) do count = count + 1 end
-	return count
+	local b = {
+		["prune"] = "juice",
+		["apple"] = "fritter",
+		["colors"] = {
+			"orange",
+			"azure"
+		}
+	}
+
+	db.print("Before", 1)
+	db.report(b)
+
+	db.clone(a, b)
+
+	db.print("After", 5)
+	db.report(b)
 end
 
 db.VarInitialize()
