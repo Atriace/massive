@@ -46,6 +46,13 @@ db.cmdList = {
 	["show"] = "show"
 }
 
+-- Tracking variables
+db.opStartTime = time()
+
+function db.timeDiff()
+	db.print(time() - db.opStartTime)
+end
+
 local frame = CreateFrame("Frame", "Massive", UIParent)
 frame:SetPoint("CENTER")
 frame:SetHeight(1)
@@ -446,11 +453,14 @@ function db.sanitize(arg)
 	return value
 end
 
-function db.report(target, depthLimit, indent)	
+function db.describe(target, depthLimit, indent)	
 	depthLimit = (tonumber(depthLimit)) or 4
 	indent = indent or ""
-	local object, region, regions, vType, key  = target
-	if type(target)=="string" then
+	local object, region, regions, vType, key
+	if target == nil then
+		object = _G
+		target = "_G"
+	elseif type(target)=="string" then
 		object = _G[target]
 		if not object then
 			object = db.get(target)
@@ -465,7 +475,7 @@ function db.report(target, depthLimit, indent)
 		db.ReportObject_TimeStamp = GetTime()
 		db.ReportObject_nestDepth = 1
 
-		db.print(indent.."<< Reporting " .. tostring(target) .. ":" .. type(target).." >>", 4)
+		db.print(indent.."<< Reporting " .. tostring(target) .. ":" .. type(object).. " length:" .. (#object or "")  .. "," .. (db.length(object) or "").. " >>", 4)
 	end
 	
 	if object then
@@ -486,7 +496,7 @@ function db.report(target, depthLimit, indent)
 					end
 					if db.ReportObject_nestDepth<=depthLimit and k~="parent" then
 						db.ReportObject_nestDepth = db.ReportObject_nestDepth + 1
-						db.report(object[k], depthLimit, indent.."  ")
+						db.describe(object[k], depthLimit, indent.."  ")
 					end
 					if not v.GetObjectType then
 						db.print(indent.."},", 5)
@@ -822,11 +832,90 @@ function db.list(item, depth, prefix)
 	end
 end
 
+
+db.reportArray = {}
+function db.report(object, limit, prefix, depth)
+	-- Shows what's inside an object
+	if (type(object) == "string") then
+		object = db.get(object)
+	end
+
+	if (limit == nil) then
+		limit = -1
+	elseif (type(limit) ~= "number") then
+		limit = tonumber(limit)
+	end
+	
+	if (prefix == nil) then prefix = "" end
+	if (depth == nil) then depth = 0 end
+	local i, msg
+
+	if (limit == -1 or depth <= limit) then
+		if (object ~= nil) then
+			if (depth == 0) then
+				db.print(db.color("Reporting contents of " .. (object.name or tostring(object)), "orange"))
+				db.opStartTime = time()
+				db.reportArray = {} -- We'll use this to track already checked objects
+			end
+
+			local kType, kName, vType, vName
+			local checkInterval = 0
+
+			for v,k in pairs(db.getKeyOrder(object)) do
+				v = object[k]
+				if (time() - db.opStartTime > 3) then
+					db.print("Report exceeded 3 seconds of runtime.", 3)
+					return
+				end
+
+
+				kType = type(k);
+				vType = type(v);
+
+				-- Setup our key descriptor
+				if (kType == "number") then
+					kName = "['" .. db.color(tostring(k), "white") .. "'] = ";
+				elseif (kType == "table") then
+					kName = "['" .. db.color("table", "white") .. "'] = "
+				else
+					kName = "['" .. db.color(k, "white") .. "'] = "
+				end
+	
+				-- Setup our value descriptor
+				if (vType == "table") then
+					if v.GetObjectType and (v[DeniedFrame] == nil) then
+						--db.print(">>>>> " .. kName .. " = " .. vType .. ":" .. tostring(v))
+						vName = v:GetObjectType()
+					else
+						vName = "table"
+					end
+				else
+					vName = tostring(v)
+				end
+	
+				msg = prefix .. kName .. vName;
+	
+				if (vType == "table") and (vName ~= "FontString") and (vName ~= "Texture") and (vName ~= "Slider") and (vName ~= "Button") then
+					db.print(msg .. " ¬");
+					if db.reportArray[v] == nil then
+						db.reportArray[v] = true
+						db.report(v, limit, prefix .. "   ", depth+1);
+					end
+				else
+					db.print(msg);
+				end
+			end
+		else
+			db.print(object .. " does not exist");
+		end
+	end
+end
+
+
 db.VarInitialize()
 db.CreateWindow("MassiveReport", 512, 256, true,"BOTTOM")
 db.CreateEditBox("MassiveReport")
 db.CreateWindow("MassiveTracker", 100, 50, false, "TOP", MassiveReport)
 frame:SetScript("OnUpdate", db.OnUpdate)
 frame:SetScript("OnEvent", db.OnEvent)
-
 -- db.ReportObject(_G, 1)

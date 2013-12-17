@@ -111,6 +111,17 @@ function db.merge(input, output)
 	return output
 end
 
+function db.getKeyOrder(hash)
+	-- Returns an array with sorted key values.
+	local order = {}
+	for k,v in pairs(hash) do
+		table.insert(order, tostring(k))
+	end
+
+	table.sort(order)
+
+	return order
+end
 
 ------------------------
 --| String Functions |--

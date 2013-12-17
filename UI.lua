@@ -335,6 +335,7 @@ function db.CreateBorder(title, frame)
 	end
 end
 
+
 function db.CreateGrip(title, frame)
 	local handle = CreateFrame("Button", title.."Handle", frame)
 	handle:SetWidth(16)
