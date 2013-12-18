@@ -46,6 +46,7 @@ function db.CreateWindow(title, sizeX, sizeY, fade, direction, parent)
 	db.CreateTitle(title, frame)
 	
 	frame:AddMessage("<< "..title.." Online >>", .5, .5, .5, 0)
+	return frame
 end
 
 function db.shape(p)

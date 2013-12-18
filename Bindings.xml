@@ -2,6 +2,9 @@
 	<Binding name="MASSIVE_RELOADUI" description="Reload the UI" header="MASSIVE">
 		ReloadUI()
 	</Binding>
+	<Binding name="MASSIVE_TOGGLE" description="Show/Hide the Debugger">
+		toggleMassive()
+	</Binding>
 	<Binding name="MASSIVE_MOVE_LEFT" description="Move Shown window left" runOnUp="true">
 		if ( keystate == "down" ) then
 			Massive_moveShown("left", true)

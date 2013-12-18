@@ -6,7 +6,6 @@ local parent, db = ...
 
 DEFAULT_CHAT_FRAME:AddMessage("Massive: Core Loaded", 1, 0, 0)
 
-
 -- No idea...
 db.printLog = {"1","2","3","4","5","6","7","8","9","10"}
 db.error = {"frog", "lips", "dame", "man"}
@@ -943,9 +942,23 @@ end
 
 
 db.VarInitialize()
-db.CreateWindow("MassiveReport", 512, 256, true,"BOTTOM")
+local mReport = db.CreateWindow("MassiveReport", 512, 256, true,"BOTTOM")
+mReport:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
 db.CreateEditBox("MassiveReport")
-db.CreateWindow("MassiveTracker", 100, 50, false, "TOP", MassiveReport)
+local mTracker = db.CreateWindow("MassiveTracker", 100, 50, false, "TOP", MassiveReport)
 frame:SetScript("OnUpdate", db.OnUpdate)
 frame:SetScript("OnEvent", db.OnEvent)
 -- db.ReportObject(_G, 1)
+_G["Massive"]["db"] = db
+
+function toggleMassive()
+	if (frame:GetLeft() > 0) then
+		db.print("Hiding @ " .. frame:GetLeft())
+		frame:SetPoint("TOPRIGHT", UIParent, "TOPLEFT", -20, 0)
+		frame:SetClampedToScreen(false)
+	elseif (frame:GetLeft() < 0) then
+		db.print("Showing @ " .. frame:GetLeft())
+		frame:SetClampedToScreen(true)
+		frame:SetPoint("TOPRIGHT", UIParent, "TOPLEFT", 9, 9)
+	end
+end
