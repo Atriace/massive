@@ -832,6 +832,21 @@ function db.list(item, depth, prefix)
 	end
 end
 
+function db.rtest()
+	local t = getmetatable(AuthChallengeFrame).__index
+	db.report(t)
+
+	for k,v in pairs(t) do
+		if string.find(k, "Is") ~= nil then
+			if pcall(function () AuthChallengeFrame[k](AuthChallengeFrame) end) == true then
+				db.print(k .. " = " .. tostring(AuthChallengeFrame[k](AuthChallengeFrame)))
+			else
+				db.print(k .. " = forbidden")
+			end
+		end
+	end
+	--db.print(tostring(AuthChallengeFrame:IsForbidden()))
+end
 
 db.reportArray = {}
 function db.report(object, limit, prefix, depth)
@@ -883,7 +898,7 @@ function db.report(object, limit, prefix, depth)
 	
 				-- Setup our value descriptor
 				if (vType == "table") then
-					if v.GetObjectType and (v[DeniedFrame] == nil) then
+					if v.GetObjectType and (v.IsForbidden and type(v.IsForbidden) == "function" and v:IsForbidden() ~= true) then
 						--db.print(">>>>> " .. kName .. " = " .. vType .. ":" .. tostring(v))
 						vName = v:GetObjectType()
 					else
