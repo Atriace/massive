@@ -118,9 +118,31 @@ function db.getKeyOrder(hash)
 		table.insert(order, tostring(k))
 	end
 
-	table.sort(order)
+	db.alphanumsort(order)
 
 	return order
+end
+
+function db.alphanumsort(o)
+  local function padnum(d) return ("%03d%s"):format(#d, d) end
+  table.sort(o, function(a,b)
+    return tostring(a):gsub("%d+",padnum) < tostring(b):gsub("%d+",padnum) end)
+  return o
+end
+
+function db.type(item)
+	local msg = type(item)
+	if (msg == "table") then
+		if (item.IsForbidden and type(item.IsForbidden) == "function") then
+			--db.print("Checking: " .. type(item) .. type(rawget(item, 0)))
+			if (type(rawget(item, 0)) == "nil" or item:IsForbidden() == true ) then
+				msg = "forbidden"
+			else
+				msg = string.lower(item:GetObjectType())
+			end
+		end
+	end
+	return msg
 end
 
 ------------------------

@@ -204,7 +204,10 @@ function db.OnEnterPressed(self)
 
 	db.print("Calling " .. call .. "(" .. (db.join(args, ", ") or "") .. ")", 4, true)
 	if (db[call]) then
-		db[call](unpack(args))
+		local response = db[call](unpack(args))
+		if (response ~= nil) then
+			db.print(response)
+		end
 	else
 		db.print(call .. " is not a function", 3)
 	end
@@ -832,24 +835,43 @@ function db.list(item, depth, prefix)
 	end
 end
 
-function db.rtest()
-	local t = getmetatable(AuthChallengeFrame).__index
-	db.report(t)
+function db.props(item)
+	local obj = item
+	if (type(item) == "string") then
+		obj = db.get(item)
+	end
 
-	for k,v in pairs(t) do
-		if string.find(k, "Is") ~= nil then
-			if pcall(function () AuthChallengeFrame[k](AuthChallengeFrame) end) == true then
-				db.print(k .. " = " .. tostring(AuthChallengeFrame[k](AuthChallengeFrame)))
-			else
-				db.print(k .. " = forbidden")
+	if (obj == nil) then
+		db.print(tostring(obj) .. " is a null object.")
+	else
+		local t = getmetatable(obj).__index
+		db.report(t)
+
+		if t ~= nil then
+			local o = {} -- Output table
+			for k,v in pairs(t) do
+				if pcall(function () obj[k](obj) end) == true then
+					o[k] = tostring(obj[k](obj) or "nil")
+				end
 			end
+
+			if (#o > 0) then
+				for v,k in pairs(db.getKeyOrder(o)) do
+					v = o[k]
+					db.print(k .. ": " .. v)
+				end
+			else
+				db.print(item .. " has no properties.")
+			end
+		else
+			db.print(item .. ":" .. db.type(obj) .. " has no metadata")
 		end
 	end
-	--db.print(tostring(AuthChallengeFrame:IsForbidden()))
 end
 
 db.reportArray = {}
-function db.report(object, limit, prefix, depth)
+function db.report(target, limit, prefix, depth)
+	local object = target
 	-- Shows what's inside an object
 	if (type(object) == "string") then
 		object = db.get(object)
@@ -884,44 +906,37 @@ function db.report(object, limit, prefix, depth)
 				end
 
 
-				kType = type(k);
-				vType = type(v);
+				kType = db.type(k);
+				vType = db.type(v);
 
 				-- Setup our key descriptor
-				if (kType == "number") then
-					kName = "['" .. db.color(tostring(k), "white") .. "'] = ";
-				elseif (kType == "table") then
-					kName = "['" .. db.color("table", "white") .. "'] = "
+				if (kType == "table") then
+					kName = db.color(kType, "white") .. " = "
 				else
-					kName = "['" .. db.color(k, "white") .. "'] = "
+					kName = db.color(k, "white") .. " = "
 				end
 	
 				-- Setup our value descriptor
-				if (vType == "table") then
-					if v.GetObjectType and (v.IsForbidden and type(v.IsForbidden) == "function" and v:IsForbidden() ~= true) then
-						--db.print(">>>>> " .. kName .. " = " .. vType .. ":" .. tostring(v))
-						vName = v:GetObjectType()
-					else
-						vName = "table"
-					end
+				if (vType == "function" or "table") then
+					vName = vType
 				else
 					vName = tostring(v)
 				end
 	
-				msg = prefix .. kName .. vName;
+				msg = db.color(prefix, "darkGrey") .. kName .. vName;
 	
-				if (vType == "table") and (vName ~= "FontString") and (vName ~= "Texture") and (vName ~= "Slider") and (vName ~= "Button") then
+				if (vType == "table") and (vName ~= "fontstring") and (vName ~= "texture") and (vName ~= "slider") and (vName ~= "button") then
 					db.print(msg .. " ¬");
 					if db.reportArray[v] == nil then
 						db.reportArray[v] = true
-						db.report(v, limit, prefix .. "   ", depth+1);
+						db.report(v, limit, prefix .. "|   ", depth+1);
 					end
 				else
 					db.print(msg);
 				end
 			end
 		else
-			db.print(object .. " does not exist");
+			db.print(tostring(target) .. " does not exist");
 		end
 	end
 end
