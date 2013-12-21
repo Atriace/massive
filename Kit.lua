@@ -158,7 +158,7 @@ function db.getKeyOrder(hash)
 	-- Returns an array with sorted key values.
 	local order = {}
 	for k,v in pairs(hash) do
-		table.insert(order, tostring(k))
+		table.insert(order, k)
 	end
 
 	db.alphanumsort(order)

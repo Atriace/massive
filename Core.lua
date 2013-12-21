@@ -980,8 +980,8 @@ function db.report(target, limit, prefix, depth)
 			local kType, kName, vType, vName
 			local checkInterval = 0
 
-			for k,v in pairs(object) do
-				--v = object[k]
+			for v,k in ipairs(db.getKeyOrder(object)) do
+				v = object[k]
 				if (time() - db.opStartTime > 3) then
 					db.print("Report exceeded 3 seconds of runtime.", 3)
 					return
