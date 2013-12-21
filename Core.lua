@@ -6,8 +6,6 @@ local parent, db = ...
 
 DEFAULT_CHAT_FRAME:AddMessage("Massive: Core Loaded", 1, 0, 0)
 
--- No idea...
-db.printLog = {"1","2","3","4","5","6","7","8","9","10"}
 db.error = {"frog", "lips", "dame", "man"}
 while not db.error[20] do
 	table.insert(db.error, 1, "Oodles")
@@ -29,11 +27,6 @@ db.ScrollInterval = 0
 db.UpdateInterval = 0
 db.SecondInterval = 0
 db.second = 0
-db.physics = {
-	as = 0,
-	v = 0,
-	dx = 0,
-}
 
 db.cmdList = {
 	["report"] = "report",
@@ -234,8 +227,6 @@ function db.print(msg, id, clear)
 			MassiveReport:Clear()
 		end
 		if msg and msg~=_ then
-			table.insert(db.printLog, 10, msg)
-			table.remove(db.printLog, 1)
 			MassiveReport:AddMessage(msg, .5, .5, .5, (id or 0))
 			MassiveReport:UpdateColorByID(1, 0.35, 0.35, 1.00) -- Blue
 			MassiveReport:UpdateColorByID(2, 0.50, 1.00, 0.50) -- Green
@@ -611,6 +602,12 @@ function db.VariablesLoaded()
 	end
 end
 
+db.physics = {
+	as = 0,
+	v = 0,
+	dx = 0,
+}
+
 function db.OnUpdate(self, elapsed)
 	--[[ KeyBinding Accelerator ]]--
 	if MassiveRegion and MassiveRegion.toggle==true then
@@ -834,6 +831,60 @@ function db.list(item, depth, prefix)
 	end
 end
 
+local frameProperties = {
+	['CanChangeAttribute'] = true,
+	['CanChangeProtectedState'] = true,
+	['GetAlpha'] = true,
+	['GetAnimationGroups'] = true,
+	--['GetAttribute'] = true,
+	['GetBackdrop'] = true,
+	['GetBackdropBorderColor'] = true,
+	['GetBackdropColor'] = true,
+	['GetBottom'] = true,
+	['GetBoundsRect'] = true,
+	['GetCenter'] = true,
+	['GetClampRectInsets'] = true,
+	['GetDepth'] = true,
+	['GetEffectiveAlpha'] = true,
+	['GetEffectiveDepth'] = true,
+	['GetEffectiveScale'] = true,
+	['GetFrameLevel'] = true,
+	['GetFrameStrata'] = true,
+	['GetHeight'] = true,
+	['GetHitRectInsets'] = true,
+	['GetID'] = true,
+	['GetLeft'] = true,
+	['GetMaxResize'] = true,
+	['GetMinResize'] = true,
+	['GetName'] = true,
+	['GetNumChildren'] = true,
+	['GetNumPoints'] = true,
+	['GetNumRegions'] = true,
+	['GetObjectType'] = true,
+	['GetParent'] = true,
+	['GetRect'] = true,
+	['GetRight'] = true,
+	['GetScale'] = true,
+	['GetSize'] = true,
+	['GetTop'] = true,
+	['GetWidth'] = true,
+	['IsClampedToScreen'] = true,
+	['IsDragging'] = true,
+	['IsForbidden'] = true,
+	['IsIgnoringDepth'] = true,
+	['IsJoystickEnabled'] = true,
+	['IsKeyboardEnabled'] = true,
+	['IsMouseEnabled'] = true,
+	['IsMouseWheelEnabled'] = true,
+	['IsMovable'] = true,
+	['IsProtected'] = true,
+	['IsResizable'] = true,
+	['IsShown'] = true,
+	['IsToplevel'] = true,
+	['IsUserPlaced'] = true,
+	['IsVisible'] = true
+}
+
 function db.props(item)
 	local obj = item
 	if (type(item) == "string") then
@@ -844,27 +895,55 @@ function db.props(item)
 		db.print(tostring(obj) .. " is a null object.")
 	else
 		local t = getmetatable(obj).__index
-		db.report(t)
-
+		
 		if t ~= nil then
 			local o = {} -- Output table
+
 			for k,v in pairs(t) do
-				if pcall(function () obj[k](obj) end) == true then
-					o[k] = tostring(obj[k](obj) or "nil")
+				-- Make sure it's a property we care about
+				if (frameProperties[k]) then
+					-- Store the output for evaluation
+				 	local returnValues = {obj[k](obj)}
+					local count = db.length(returnValues)
+
+					if (count == 0) then
+						o[k] = nil
+					elseif (count == 1) then
+						if (k == "GetParent") then
+							o[k] = returnValues[1]:GetName()
+						else
+							o[k] = returnValues[1]
+						end
+					else
+						o[k] = returnValues
+					end
 				end
 			end
 
-			if (#o > 0) then
-				for v,k in pairs(db.getKeyOrder(o)) do
-					v = o[k]
-					db.print(k .. ": " .. v)
-				end
+			if (db.length(o) > 0) then
+				-- for v,k in pairs(db.getKeyOrder(o)) do
+				-- 	v = o[k]
+				-- 	db.print(k .. ": " .. v)
+				-- end
+				db.report(o)
 			else
 				db.print(item .. " has no properties.")
 			end
 		else
 			db.print(item .. ":" .. db.type(obj) .. " has no metadata")
 		end
+	end
+end
+
+local function tryProperty(obj, func)
+	obj[k](obj)
+end
+
+function db.set()
+	if (UIParent:GetScale() > 0.5) then 
+		UIParent:SetScale(0.25)
+	else
+		UIParent:SetScale(0.75)
 	end
 end
 
@@ -889,7 +968,11 @@ function db.report(target, limit, prefix, depth)
 	if (limit == -1 or depth <= limit) then
 		if (object ~= nil) then
 			if (depth == 0) then
-				db.print(db.color("Reporting contents of " .. (object.name or tostring(object)), "orange"))
+				if (object.IsObjectType and object:IsObjectType("Frame")) then
+					db.print(db.color("Reporting contents of frame " .. (object:GetName() or target), "orange"))
+				else
+					db.print(db.color("Reporting contents of " .. tostring(target), "orange"))
+				end
 				db.opStartTime = time()
 				db.reportArray = {} -- We'll use this to track already checked objects
 			end
@@ -897,8 +980,8 @@ function db.report(target, limit, prefix, depth)
 			local kType, kName, vType, vName
 			local checkInterval = 0
 
-			for v,k in pairs(db.getKeyOrder(object)) do
-				v = object[k]
+			for k,v in pairs(object) do
+				--v = object[k]
 				if (time() - db.opStartTime > 3) then
 					db.print("Report exceeded 3 seconds of runtime.", 3)
 					return
@@ -908,30 +991,32 @@ function db.report(target, limit, prefix, depth)
 				kType = db.type(k);
 				vType = db.type(v);
 
-				-- Setup our key descriptor
-				if (kType == "table") then
-					kName = db.color(kType, "white") .. " = "
-				else
-					kName = db.color(k, "white") .. " = "
-				end
-	
-				-- Setup our value descriptor
-				if (vType == "function" or "table") then
-					vName = vType
-				else
-					vName = tostring(v)
-				end
-	
-				msg = db.color(prefix, "darkGrey") .. kName .. vName;
-	
-				if (vType == "table") and (vName ~= "fontstring") and (vName ~= "texture") and (vName ~= "slider") and (vName ~= "button") then
-					db.print(msg .. " ¬");
-					if db.reportArray[v] == nil then
-						db.reportArray[v] = true
-						db.report(v, limit, prefix .. "|   ", depth+1);
+				if (vType ~= "userdata") then
+					-- Setup our key descriptor
+					if (kType == "table") then
+						kName = db.color(kType, "white") .. " = "
+					else
+						kName = db.color(k, "white") .. " = "
 					end
-				else
-					db.print(msg);
+		
+					-- Setup our value descriptor
+					if (vType == "function") or (vType == "table") then
+						vName = vType
+					else
+						vName = db.color(tostring(v), "white") .. ":" .. vType
+					end
+		
+					msg = db.color(prefix, "darkGrey") .. kName .. vName;
+		
+					if (vType == "table") and (vName ~= "fontstring") and (vName ~= "texture") and (vName ~= "slider") and (vName ~= "button") then
+						db.print(msg .. " ¬");
+						if db.reportArray[v] == nil then
+							db.reportArray[v] = true
+							db.report(v, limit, prefix .. "|   ", depth+1);
+						end
+					else
+						db.print(msg);
+					end
 				end
 			end
 		else

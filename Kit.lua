@@ -8,28 +8,71 @@ DEFAULT_CHAT_FRAME:AddMessage("Massive: Kit Loaded", 1, 0, 0)
 
 function db.get(stringPath)
 	-- Resolves a dot.notation to the nested object it was refering to.
-	local path, obj = db.split(stringPath, ".")
-	local objName = ""
-	for k,v in pairs(path) do
-		if not obj then
-			if _G[v] then
-				objName = v
-				obj = _G[v]
-			else
-				db.print(v .. " is not a global property.", 3)
+	local path = db.split(stringPath, ".")
+	local objName = table.remove(path, 1)
+	local obj = _G[objName]
+	
+	
+	if (obj ~= nil) then
+		for k,v in pairs(path) do
+			local matchFound = false
+			if (db.isFrame(obj)) then
+				--db.print(objName .. " is a frame.  Searching for " .. v .. " inside it.")
+				local child = db.getChildByName(obj, v)
+				if (child ~= nil) then
+					--db.print("Found " .. v .. " inside " .. objName, 4)
+					objName = v
+					obj = child
+					matchFound = true
+				else
+					--db.print(v .. " is not a child region of " .. objName, 3)
+				end
 			end
-		else
-			if obj[v] then
-				objName = v
-				obj = obj[v]
-			else
-				db.print(v .. " is not a property of " .. objName, 3)
+
+			if (matchFound == false) then
+				--db.print(objName .. " is a " .. type(obj) .. ".  Searching for " .. v .. " inside it.")
+				if obj[v] then
+					--db.print("Found " .. v .. " inside " .. objName, 4)
+					objName = v
+					obj = obj[v]
+				else
+					--db.print(v .. " is not a property of " .. objName, 3)
+				end
 			end
+		end
+		return obj
+	else
+		db.print(objName .. " is not a global property.", 3)
+		return nil
+	end
+end
+
+function db.getChildByName(f, name)
+	local list = {f:GetChildren()}
+	local obj = nil
+	for k,v in pairs(list) do
+		if (v:GetName() == name) then
+			obj = v
+			break
 		end
 	end
 	return obj
 end
 
+function db.isFrame(obj)
+	if (type(obj) == "table") then
+		if obj.GetName then
+			db.print(tostring(obj) .. " is a frame called " .. obj:GetName())
+			return true
+		else
+			db.print(tostring(obj) .. " is not a frame")
+			return false
+		end
+	else
+		db.print(tostring(obj) .. " is not a table")
+		return false
+	end
+end
 
 -----------------------
 --| Table Functions |--
@@ -166,7 +209,7 @@ db.hue = {
 
 function db.color(string, color)
 	-- Returns text in the color chosen
-	return ("|c00" .. db.hue[color] .. string .. "|r");
+	return ("|c00" .. db.hue[color] .. string .. "|r")
 end
 
 function db.split(s, sep)
